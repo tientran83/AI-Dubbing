@@ -22,6 +22,14 @@ def read_root():
         return f.read()
 
 def get_transcript_with_ytdlp(url: str) -> str:
+    # Tự tạo file cookie nếu có cấu hình biến môi trường YOUTUBE_COOKIES
+    cookie_path = None
+    cookie_content = os.environ.get("YOUTUBE_COOKIES")
+    if cookie_content:
+        cookie_path = os.path.join(BASE_DIR, "cookies.txt")
+        with open(cookie_path, "w", encoding="utf-8") as f:
+            f.write(cookie_content)
+
     ydl_opts = {
         'skip_download': True,
         'writesubtitles': True,
@@ -29,14 +37,17 @@ def get_transcript_with_ytdlp(url: str) -> str:
         'subtitleslangs': ['en', 'vi', 'ja', 'ko'],
         'quiet': True,
         'no_warnings': True,
-        # Giả lập thiết bị web di động & mobile app để tránh bị YouTube check bot
+        # Giả lập Smart TV và Kính VR để YouTube không đòi xác minh bot
         'extractor_args': {
             'youtube': {
-                'player_client': ['mweb', 'android', 'ios']
+                'player_client': ['tv_embedded', 'android_vr', 'web_creator']
             }
         }
     }
-    
+
+    if cookie_path and os.path.exists(cookie_path):
+        ydl_opts['cookiefile'] = cookie_path
+
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)
         subtitles = info.get('subtitles') or info.get('automatic_captions')
@@ -44,7 +55,6 @@ def get_transcript_with_ytdlp(url: str) -> str:
         if not subtitles:
             raise Exception("Video này không có phụ đề để trích xuất!")
         
-        # Chọn ngôn ngữ ưu tiên
         selected_lang = None
         for lang in ['en', 'vi', 'ja', 'ko']:
             if lang in subtitles:
@@ -57,7 +67,6 @@ def get_transcript_with_ytdlp(url: str) -> str:
         if not formats:
             raise Exception("Không tìm thấy dữ liệu phụ đề phù hợp!")
 
-        # Tìm link phụ đề (ưu tiên định dạng json3)
         sub_url = None
         for fmt in formats:
             if fmt.get('ext') == 'json3':
@@ -66,12 +75,10 @@ def get_transcript_with_ytdlp(url: str) -> str:
         if not sub_url:
             sub_url = formats[0].get('url')
 
-        # Tải nội dung phụ đề
         req = urllib.request.Request(sub_url, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req) as response:
             content = response.read().decode('utf-8')
 
-        # Bóc tách câu chữ
         try:
             data = json.loads(content)
             texts = []
