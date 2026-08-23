@@ -29,10 +29,10 @@ def get_transcript_with_ytdlp(url: str) -> str:
         'subtitleslangs': ['en', 'vi', 'ja', 'ko'],
         'quiet': True,
         'no_warnings': True,
-        # Giả lập thiết bị di động để tránh bị YouTube đòi đăng nhập / check bot
+        # Giả lập thiết bị web di động & mobile app để tránh bị YouTube check bot
         'extractor_args': {
             'youtube': {
-                'player_client': ['android', 'ios']
+                'player_client': ['mweb', 'android', 'ios']
             }
         }
     }
@@ -53,8 +53,11 @@ def get_transcript_with_ytdlp(url: str) -> str:
         if not selected_lang:
             selected_lang = list(subtitles.keys())[0]
 
-        # Lấy link tải phụ đề (ưu tiên định dạng json3)
-        formats = subtitles[selected_lang]
+        formats = subtitles.get(selected_lang, [])
+        if not formats:
+            raise Exception("Không tìm thấy dữ liệu phụ đề phù hợp!")
+
+        # Tìm link phụ đề (ưu tiên định dạng json3)
         sub_url = None
         for fmt in formats:
             if fmt.get('ext') == 'json3':
