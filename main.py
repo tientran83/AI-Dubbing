@@ -29,6 +29,12 @@ def get_transcript_with_ytdlp(url: str) -> str:
         'subtitleslangs': ['en', 'vi', 'ja', 'ko'],
         'quiet': True,
         'no_warnings': True,
+        # Giả lập thiết bị di động để tránh bị YouTube đòi đăng nhập / check bot
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'ios']
+            }
+        }
     }
     
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
