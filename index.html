@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Video Dubbing - Lồng tiếng YouTube</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-[#0D0B18] text-white font-sans min-h-screen">
+    <nav class="flex justify-between items-center px-6 py-4 border-b border-purple-900/30">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-purple-600 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg shadow-purple-600/50">▶</div>
+            <span class="text-xl font-bold tracking-wide">Lồng tiếng AI</span>
+        </div>
+        <i data-lucide="menu" class="w-7 h-7 text-gray-300 cursor-pointer"></i>
+    </nav>
+
+    <main class="max-w-4xl mx-auto px-4 py-12 text-center">
+        <div class="inline-flex items-center gap-2 bg-purple-900/40 border border-purple-500/30 px-4 py-2 rounded-full text-purple-300 text-sm mb-6">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+            Dịch thuật và lồng tiếng thời gian thực bằng AI
+        </div>
+
+        <h1 class="text-4xl md:text-6xl font-extrabold mb-6 tracking-tight bg-gradient-to-r from-white via-purple-100 to-purple-400 bg-clip-text text-transparent">
+            Lồng tiếng YouTube
+        </h1>
+        
+        <p class="text-gray-400 text-base md:text-lg mb-8 max-w-xl mx-auto">
+            Nhập đường dẫn URL video YouTube để dịch và phát bằng tiếng Việt chỉ với một cú nhấp chuột.
+        </p>
+
+        <!-- Khung nhập URL -->
+        <div class="bg-slate-900/80 p-4 md:p-6 rounded-2xl border border-purple-500/30 shadow-2xl backdrop-blur-md mb-8">
+            <div class="flex flex-col md:flex-row gap-3">
+                <input type="text" id="youtubeUrl" placeholder="Dán link YouTube (ví dụ: https://www.youtube.com/watch?v=...)" 
+                       class="flex-1 bg-slate-800/80 border border-purple-500/20 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500">
+                <button onclick="startDubbing()" id="btnSubmit" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold px-6 py-3 rounded-xl transition duration-200 shadow-lg shadow-purple-600/30 flex items-center justify-center gap-2">
+                    <i data-lucide="wand-2" class="w-5 h-5"></i>
+                    Bắt đầu dịch
+                </button>
+            </div>
+        </div>
+
+        <!-- Khung hiển thị kết quả -->
+        <div id="resultBox" class="hidden text-left bg-slate-900/60 p-6 rounded-2xl border border-purple-500/30 mb-12">
+            <h3 class="text-lg font-bold text-purple-400 mb-2 flex items-center gap-2">
+                <i data-lucide="languages" class="w-5 h-5"></i>
+                Bản dịch từ Gemini AI:
+            </h3>
+            <p id="translatedText" class="text-gray-200 leading-relaxed whitespace-pre-line"></p>
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        async function startDubbing() {
+            const url = document.getElementById('youtubeUrl').value;
+            const btn = document.getElementById('btnSubmit');
+            const resultBox = document.getElementById('resultBox');
+            const translatedText = document.getElementById('translatedText');
+
+            if (!url) return alert('Vui lòng nhập link YouTube!');
+
+            btn.disabled = true;
+            btn.innerText = 'Đang xử lý...';
+            resultBox.classList.add('hidden');
+
+            try {
+                const response = await fetch('/api/translate-transcript', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'json' },
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ youtube_url: url })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    translatedText.innerText = data.translated_text;
+                    resultBox.classList.remove('hidden');
+                } else {
+                    alert('Lỗi: ' + (data.detail || 'Không thể trích xuất transcript từ video này!'));
+                }
+            } catch (err) {
+                alert('Có lỗi kết nối máy chủ!');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i data-lucide="wand-2" class="w-5 h-5"></i> Bắt đầu dịch';
+                lucide.createIcons();
+            }
+        }
+    </script>
+</body>
+</html>
